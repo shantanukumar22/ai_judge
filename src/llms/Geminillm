@@ -1,0 +1,16 @@
+import google.generativeai as genai
+import os
+from dotenv import load_dotenv
+
+class GroqLLM:
+    def __init__(self):
+        load_dotenv()
+    
+    def get_llm(self):
+        try:
+            api_key = os.getenv("GEMINI_API_KEY")
+            genai.configure(api_key=api_key)
+            llm = genai.GenerativeModel("gemini-2.5-flash")
+            return llm
+        except Exception as e:
+            raise ValueError("Error occured with exception :{e}")
