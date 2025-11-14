@@ -1,30 +1,44 @@
-from langgraph.graph import StateGraph,START,END
-from src.llms.groqllm import GroqLLM
-from src.states.caseState import CaseState
-from src.nodes.case_Node import CaseNode
+from langgraph.graph import StateGraph, START, END
+from src.states.case_state import CaseState
+from src.nodes.ingest_node import IngestNode
+from src.nodes.retrieve_node import RetrieveNode
+from src.nodes.prosecution_node import ProsecutionNode
+from src.nodes.defense_node import DefenseNode
+from src.nodes.judge_node import JudgeNode
+from src.nodes.hitl_node import HumanReviewNode
 
-class GraphBuilder():
-    def __init__(self,llm):
-        self.llm=llm
+class GraphBuilder:
+    def __init__(self, llm, vector_store):
+        self.llm = llm
+        self.vector_store = vector_store
 
-    def build_topic_graph(self):
+    def build(self):
+        g = StateGraph(CaseState)
 
-        """Build a graph to give the judgements based on the topic"""
-        self.graph = StateGraph(CaseState)
-        self.case_node_obj=CaseNode(self.llm)
-        self.graph.add_node("ipc_sections",self.case_node_obj.ipc_sections_creation)
-        self.graph.add_node("title_creation",self.case_node_obj.title_creation)
-        self.graph.add_node("judgement",self.case_node_obj.charges_creation)
-        self.graph.add_node("final_sentence",self.case_node_obj.final_sentence)
-        self.graph.add_edge(START,"title_creation")
-        self.graph.add_edge("title_creation","ipc_sections")
-        self.graph.add_edge("ipc_sections","judgement")
-        self.graph.add_edge("judgement","final_sentence")
-        self.graph.add_edge("final_sentence",END)
-        return self.graph
-        
-    def setup_graph(self,usecase):
-        if usecase=="topic":
-            self.build_topic_graph()
+        ingest = IngestNode(self.vector_store)
+        retrieve = RetrieveNode(self.vector_store)
+        prosecution = ProsecutionNode(self.llm)
+        defense = DefenseNode(self.llm)
+        judge = JudgeNode(self.llm)
+        hitl = HumanReviewNode()
 
-        return self.graph.compile()
+        g.add_node("ingest", ingest.load_and_embed)
+        g.add_node("retrieve", retrieve.retrieve_context)
+        g.add_node("prosecution", prosecution.prosecutor_argument)
+        g.add_node("defense", defense.defense_argument)
+        g.add_node("judge", judge.judge_draft)
+
+        g.add_node("human_review", hitl.human_review)
+
+        g.add_node("finalize", judge.finalize_verdict)
+
+        g.add_edge(START, "ingest")
+        g.add_edge("ingest", "retrieve")
+        g.add_edge("retrieve", "prosecution")
+        g.add_edge("prosecution", "defense")
+        g.add_edge("defense", "judge")
+        g.add_edge("judge", "human_review")
+        g.add_edge("human_review", "finalize")
+        g.add_edge("finalize", END)
+
+        return g.compile()

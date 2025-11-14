@@ -1,10 +1,35 @@
+# langchain
+# langgraph
+# langchain_community
+# langchain_core
+# langchain_groq
+# fastapi
+# uvicorn
+# watchdog
+# langgraph-cli[inmem]
+
 langchain
+langchain-core
+langchain-community
+langchain-text-splitters
 langgraph
-langchain_community
-langchain_core
-langchain_groq
-fastapi
+faiss-cpu
+sentence-transformers
+transformers
+huggingface-hub
+
+pydantic
+python-dotenv
+
+groq
+tiktoken
+
+numpy
+scikit-learn
+
 uvicorn
-watchdog
-langgraph-cli[inmem]
+fastapi
+
+# Optional but recommended
+rich
 

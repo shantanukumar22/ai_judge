@@ -1,4 +1,4 @@
-from src.states.caseState import CaseState
+from states.case_state import CaseState
 class CaseNode:
     """A class to represent the case"""
     def __init__(self,llm):
