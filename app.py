@@ -1,27 +1,62 @@
 import uvicorn
-from fastapi import FastAPI,Request
+from fastapi import FastAPI, Request
 from src.graphs.graph_builder import GraphBuilder
 from src.llms.groqllm import GroqLLM
-import os
-from dotenv import load_dotenv
-load_dotenv()
-app=FastAPI()
+from src.vectorstore.faiss_store import FaissVectorStore
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# ----------------------
+#  LOAD ONCE AT STARTUP
+# ----------------------
+llm = GroqLLM()
+vector_store = FaissVectorStore("faiss_index")
+
+# Build LangGraph agent ONCE – super fast on requests
+graph = GraphBuilder(llm, vector_store).build()
+
+
 
 @app.post("/judgement")
-async def give_judgement(request:Request):
-    data=await request.json()
-    topic=data.get("topic","")
+async def give_judgement(request: Request):
+    data = await request.json()
+    case_text = data.get("case_text", "")
 
-    groqllm=GroqLLM()
-    llm=groqllm.get_llm()
+    if not case_text:
+        return {"error": "case_text is required"}
 
-    graph_builder=GraphBuilder(llm)
-    if topic:
-        graph=graph_builder.setup_graph(usecase="topic")
-        state=graph.invoke({"topic":topic})
+    state = {"raw_case_file": case_text}
 
-    return {"data":state}
+    result = graph.invoke(state)
 
-if __name__=="__main__":
-    uvicorn.run("app:app",host="0.0.0.0",port=8000,reload=True)
+    # If LangGraph HITL interrupt (rare)
+    if "__interrupt__" in result:
+        partial = graph.get_state().value
+        return {
+            "prosecution": partial.get("prosecution_argument"),
+            "defense": partial.get("defense_argument"),
+            "verdict": partial.get("final_verdict")
+        }
 
+    # Normal output
+    return {
+        "prosecution": result.get("prosecution_argument"),
+        "defense": result.get("defense_argument"),
+        "verdict": result.get("final_verdict")
+    }
+
+
+if __name__ == "__main__":
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)

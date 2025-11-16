@@ -1,5 +1,3 @@
-
-
 from langgraph.graph import StateGraph, START, END
 from src.states.case_state import CaseState
 from src.nodes.ingest_node import IngestNode
@@ -17,24 +15,26 @@ class GraphBuilder:
     def build(self):
         g = StateGraph(CaseState)
 
+        # Initialize nodes
         ingest = IngestNode(self.vector_store)
         retrieve = RetrieveNode(self.vector_store)
         prosecution = ProsecutionNode(self.llm)
         defense = DefenseNode(self.llm)
-        judge = JudgeNode(self.llm)
+        judge = JudgeNode(self.llm, self.vector_store)  # ✅ NOW PASSING vector_store
 
+        # Add nodes to graph
         g.add_node("ingest", ingest.load_and_embed)
         g.add_node("retrieve", retrieve.retrieve_context)
         g.add_node("prosecution", prosecution.prosecutor_argument)
         g.add_node("defense", defense.defense_argument)
         g.add_node("judge", judge.judge_draft)
 
+        # Define edges (workflow)
         g.add_edge(START, "ingest")
         g.add_edge("ingest", "retrieve")
         g.add_edge("retrieve", "prosecution")
         g.add_edge("prosecution", "defense")
         g.add_edge("defense", "judge")
-
         g.add_edge("judge", END)
 
         return g.compile()

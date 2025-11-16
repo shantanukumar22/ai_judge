@@ -16,7 +16,7 @@ class GroqLLM:
         # Create underlying Groq LLM
         self.llm = ChatGroq(
             api_key=self.api_key,
-            model="llama-3.1-8b-instant"
+            model="llama-3.3-70b-versatile"
         )
 
     def invoke(self, prompt: str):

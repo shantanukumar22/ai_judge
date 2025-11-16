@@ -24,7 +24,7 @@ During interrogation, Deepak claimed self-defense, alleging that Arjun attempted
 The prosecution alleges that Deepak attempted to commit murder (IPC 307), intentionally caused grievous hurt with a dangerous weapon (IPC 326/324), and verbally provoked the complainant (IPC 504).
 """
 
-state = {"raw_case_file": case_text}
+state = {"raw_case_file": case_text} 
 result = graph.invoke(state)
 
 print("\n--- PROSECUTION ARGUMENT ---")

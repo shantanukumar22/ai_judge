@@ -53,7 +53,7 @@ class RetrieveNode:
     def retrieve_context(self, state: CaseState):
         query = state.get("raw_case_file", "")
 
-        docs = self.vector_store.similarity_search(query, k=12)
+        docs = self.vector_store.similarity_search(query, k=6)
 
         ipc_sections = []
         case_chunks = []
